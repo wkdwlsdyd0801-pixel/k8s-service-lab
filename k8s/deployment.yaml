@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-web
+  labels:
+    app: hello-web
+spec:
+  # Three identical pods. The Service below spreads traffic across all three,
+  # which is what makes the round-robin behaviour visible.
+  replicas: 3
+  selector:
+    # The Deployment manages exactly the pods whose labels match this selector.
+    matchLabels:
+      app: hello-web
+  template:
+    metadata:
+      labels:
+        # This label must match both the selector above and the Service selector,
+        # otherwise the Service would send traffic to zero pods.
+        app: hello-web
+    spec:
+      containers:
+        - name: hello-web
+          # Built from the Dockerfile in this repo. imagePullPolicy IfNotPresent
+          # lets a locally built image be used without pushing to a registry.
+          image: hello-web:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          # Readiness gates traffic: a pod only receives requests once /healthz
+          # answers, so a still-starting pod never gets a request.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          # Liveness restarts a pod that has hung: if /healthz stops answering,
+          # the kubelet kills and recreates the container.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Requests/limits let the scheduler place pods sensibly and stop one
+          # pod from starving the node.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          # Hardening: no privilege escalation, drop the whole Linux capability
+          # set, and run with a read-only root filesystem.
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

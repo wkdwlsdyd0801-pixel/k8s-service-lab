@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-web
+spec:
+  # NodePort exposes the Service on a fixed port of every node, so it can be
+  # reached from outside the cluster (http://<node-ip>:30080) without a cloud
+  # load balancer.
+  type: NodePort
+  selector:
+    # Send traffic to every pod carrying this label. kube-proxy then balances
+    # connections across them, which produces the round-robin effect.
+    app: hello-web
+  ports:
+    - name: http
+      # Port the Service listens on inside the cluster.
+      port: 80
+      # Port on the pods that traffic is forwarded to (matches containerPort).
+      targetPort: 8080
+      # Fixed external port on each node. Must be in the 30000-32767 range.
+      nodePort: 30080

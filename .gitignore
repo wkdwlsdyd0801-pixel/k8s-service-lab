@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local env / secrets
+.env
+*.local
+
+# IDE
+.idea/
+.vscode/
+
+# Local databases
+*.sqlite3
+*.db
